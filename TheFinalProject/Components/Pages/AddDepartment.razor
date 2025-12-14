@@ -1,0 +1,32 @@
+﻿@page "/departments/add"
+@using TheFinalProject.Models
+@using TheFinalProject.Data.Services
+@inject DepartmentService DepartmentService
+@inject NavigationManager NavManager
+
+<h3>Добавить категорию финансов</h3>
+
+<EditForm Model="department" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary class="text-danger" />
+
+    <div class="mb-3">
+        <label class="form-label">Название категории</label>
+        <InputText class="form-control" @bind-Value="department.Name" placeholder="Например: «Доход от аренды», «Транспортные расходы»" />
+        <ValidationMessage For="@(() => department.Name)" />
+    </div>
+
+    <button type="submit" class="btn btn-success">Добавить категорию</button>
+    <a href="/departments" class="btn btn-secondary">Отмена</a>
+</EditForm>
+
+@code {
+    private Department department = new();
+
+    private async Task HandleValidSubmit()
+    {
+        // Добавляем категорию
+        await DepartmentService.AddDepartmentAsync(department);
+        NavManager.NavigateTo("/departments");  // Перенаправление на список категорий
+    }
+}

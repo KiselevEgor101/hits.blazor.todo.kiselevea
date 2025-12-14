@@ -1,0 +1,121 @@
+﻿@page "/departments"
+@using TheFinalProject.Models
+@using TheFinalProject.Data.Services
+@inject DepartmentService DepartmentService
+@inject NavigationManager NavManager
+
+<h3>Категории</h3>
+
+<div class="mb-3">
+    <a href="/departments/add" class="btn btn-primary">Добавить категорию</a>
+</div>
+
+@if (departments == null)
+{
+    <p><em>Загрузка...</em></p>
+}
+else if (!departments.Any())
+{
+    <div class="alert alert-info">
+        Категорий пока нет. <a href="/departments/add">Добавьте первую категорию</a>
+    </div>
+}
+else
+{
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Название</th>
+                <th>Тип</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var dept in departments)
+            {
+                <tr>
+                    <td>@dept.Id</td>
+                    <td>@dept.Name</td>
+                    <td>
+                        @if (dept is Branch)
+                        {
+                            <span class="badge bg-primary">Филиал</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Главная категория</span>
+                        }
+                    </td>
+                    <td>
+                        <!-- Удалена кнопка "Изменить" -->
+                        <button class="btn btn-sm btn-danger" @onclick="() => ShowDeleteConfirmation(dept)">
+                            Удалить
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (deleteConfirmationVisible)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Подтверждение удаления</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="HideDeleteConfirmation">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>Вы уверены, что хотите удалить категорию <strong>@departmentToDelete?.Name</strong>?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="HideDeleteConfirmation">Отмена</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteDepartment">Удалить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Department> departments = new();
+    private bool deleteConfirmationVisible = false;
+    private Department departmentToDelete;
+
+    protected override async Task OnInitializedAsync()
+    {
+        departments = await DepartmentService.GetDepartmentsAsync();
+    }
+
+    private void ShowDeleteConfirmation(Department department)
+    {
+        departmentToDelete = department;
+        deleteConfirmationVisible = true;
+    }
+
+    private void HideDeleteConfirmation()
+    {
+        deleteConfirmationVisible = false;
+        departmentToDelete = null;
+    }
+
+    private async Task DeleteDepartment()
+    {
+        if (departmentToDelete != null)
+        {
+            // Логика удаления через сервис
+            await DepartmentService.DeleteDepartmentAsync(departmentToDelete.Id);
+
+            // Обновляем список департаментов после удаления
+            departments = await DepartmentService.GetDepartmentsAsync();
+
+            // Скрываем модальное окно
+            HideDeleteConfirmation();
+        }
+    }
+}

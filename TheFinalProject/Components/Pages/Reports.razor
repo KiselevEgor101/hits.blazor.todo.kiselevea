@@ -1,0 +1,109 @@
+﻿@page "/reports"
+@using TheFinalProject.Models
+@using TheFinalProject.Data.Services
+@inject TransactionService TransactionService
+@inject DepartmentService DepartmentService
+
+<h3>Финансовые отчёты</h3>
+
+@if (isLoading)
+{
+    <p><em>Загрузка...</em></p>
+}
+else if (!transactions.Any())
+{
+    <div class="alert alert-info">
+        <strong>Нет данных для отчёта.</strong>
+        <a href="/add-transaction" class="alert-link">Добавьте операции</a>.
+    </div>
+}
+else
+{
+    <!-- Основные показатели -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">Доходы</h5>
+                    <h2>@($"{totalIncome:N2}") ₽</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-danger">
+                <div class="card-body">
+                    <h5 class="card-title">Расходы</h5>
+                    <h2>@($"{totalExpense:N2}") ₽</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">Общий баланс</h5>
+                    <h2>@($"{balance:N2}") ₽</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Баланс по категориям -->
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Категория</th>
+                <th>Доход</th>
+                <th>Расход</th>
+                <th>Баланс</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var dept in departments)
+            {
+                var income = transactions
+                .Where(t => t.DepartmentId == dept.Id && t.OperationType == "Приход")
+                .Sum(t => t.Amount);
+
+                var expense = transactions
+                .Where(t => t.DepartmentId == dept.Id && t.OperationType == "Расход")
+                .Sum(t => t.Amount);
+
+                var deptBalance = income - expense;
+
+                <tr>
+                    <td>@dept.Name</td>
+                    <td class="text-success">@($"{income:N2}") ₽</td>
+                    <td class="text-danger">@($"{expense:N2}") ₽</td>
+                    <td class="@(deptBalance >= 0 ? "text-success" : "text-danger")">
+                        @($"{deptBalance:N2}") ₽
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Transaction> transactions = new();
+    private List<Department> departments = new();
+    private bool isLoading = true;
+
+    private decimal totalIncome;
+    private decimal totalExpense;
+    private decimal balance;
+
+    protected override async Task OnInitializedAsync()
+    {
+        departments = await DepartmentService.GetDepartmentsAsync();
+        transactions = await TransactionService.GetTransactionsAsync();
+        CalculateTotals();
+        isLoading = false;
+    }
+
+    private void CalculateTotals()
+    {
+        totalIncome = transactions.Where(t => t.OperationType == "Приход").Sum(t => t.Amount);
+        totalExpense = transactions.Where(t => t.OperationType == "Расход").Sum(t => t.Amount);
+        balance = totalIncome - totalExpense;
+    }
+}
