@@ -70,7 +70,7 @@ else
             <label class="form-label">Тип операции</label>
             <InputSelect class="form-control" @bind-Value="transaction.OperationType">
                 <option value="">-- Выберите тип --</option>
-                <option value="Приход">Доход</option>
+                <option value="Доход">Доход</option>
                 <option value="Расход">Расход</option>
             </InputSelect>
             <ValidationMessage For="@(() => transaction.OperationType)" />

@@ -6,15 +6,37 @@
 
 <h3>Финансовые отчёты</h3>
 
+<!-- Фильтр по периоду -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Отчёт за период</h5>
+
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">С</label>
+                <input type="date" class="form-control" @bind="dateFrom" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">По</label>
+                <input type="date" class="form-control" @bind="dateTo" />
+            </div>
+            <div class="col-md-4">
+                <button class="btn btn-primary w-100" @onclick="ApplyPeriod">
+                    Показать
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @if (isLoading)
 {
     <p><em>Загрузка...</em></p>
 }
-else if (!transactions.Any())
+else if (!filteredTransactions.Any())
 {
     <div class="alert alert-info">
-        <strong>Нет данных для отчёта.</strong>
-        <a href="/add-transaction" class="alert-link">Добавьте операции</a>.
+        <strong>Нет данных за выбранный период.</strong>
     </div>
 }
 else
@@ -29,6 +51,7 @@ else
                 </div>
             </div>
         </div>
+
         <div class="col-md-3">
             <div class="card text-white bg-danger">
                 <div class="card-body">
@@ -37,12 +60,42 @@ else
                 </div>
             </div>
         </div>
+
         <div class="col-md-3">
             <div class="card text-white bg-info">
                 <div class="card-body">
-                    <h5 class="card-title">Общий баланс</h5>
+                    <h5 class="card-title">Баланс</h5>
                     <h2>@($"{balance:N2}") ₽</h2>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Круговая диаграмма -->
+    <div class="card mb-4">
+        <div class="card-body text-center">
+            <h5 class="card-title">Соотношение доходов и расходов</h5>
+
+            <svg width="200" height="200" viewBox="0 0 120 120">
+                <!-- Фон (расходы) -->
+                <circle cx="60" cy="60" r="50"
+                        fill="none"
+                        stroke="#dc3545"
+                        stroke-width="20" />
+
+                <!-- Доходы -->
+                <circle cx="60" cy="60" r="50"
+                        fill="none"
+                        stroke="#28a745"
+                        stroke-width="20"
+                        stroke-dasharray="@incomeDash 314"
+                        stroke-dashoffset="0"
+                        transform="rotate(-90 60 60)" />
+            </svg>
+
+            <div class="mt-3">
+                <span class="text-success">Доходы: @incomePercent%</span> |
+                <span class="text-danger">Расходы: @expensePercent%</span>
             </div>
         </div>
     </div>
@@ -60,11 +113,11 @@ else
         <tbody>
             @foreach (var dept in departments)
             {
-                var income = transactions
-                .Where(t => t.DepartmentId == dept.Id && t.OperationType == "Приход")
+                var income = filteredTransactions
+                .Where(t => t.DepartmentId == dept.Id && t.OperationType == "Доход")
                 .Sum(t => t.Amount);
 
-                var expense = transactions
+                var expense = filteredTransactions
                 .Where(t => t.DepartmentId == dept.Id && t.OperationType == "Расход")
                 .Sum(t => t.Amount);
 
@@ -85,25 +138,70 @@ else
 
 @code {
     private List<Transaction> transactions = new();
+    private List<Transaction> filteredTransactions = new();
     private List<Department> departments = new();
+
     private bool isLoading = true;
 
     private decimal totalIncome;
     private decimal totalExpense;
     private decimal balance;
 
+    private int incomePercent;
+    private int expensePercent;
+    private double incomeDash;
+
+    private DateTime? dateFrom;
+    private DateTime? dateTo;
+
     protected override async Task OnInitializedAsync()
     {
         departments = await DepartmentService.GetDepartmentsAsync();
         transactions = await TransactionService.GetTransactionsAsync();
+
+        filteredTransactions = transactions;
         CalculateTotals();
+
         isLoading = false;
+    }
+
+    private void ApplyPeriod()
+    {
+        filteredTransactions = transactions
+            .Where(t =>
+                (!dateFrom.HasValue || t.Date >= dateFrom.Value) &&
+                (!dateTo.HasValue || t.Date <= dateTo.Value))
+            .ToList();
+
+        CalculateTotals();
     }
 
     private void CalculateTotals()
     {
-        totalIncome = transactions.Where(t => t.OperationType == "Приход").Sum(t => t.Amount);
-        totalExpense = transactions.Where(t => t.OperationType == "Расход").Sum(t => t.Amount);
+        totalIncome = filteredTransactions
+            .Where(t => t.OperationType == "Доход")
+            .Sum(t => t.Amount);
+
+        totalExpense = filteredTransactions
+            .Where(t => t.OperationType == "Расход")
+            .Sum(t => t.Amount);
+
         balance = totalIncome - totalExpense;
+
+        var total = totalIncome + totalExpense;
+        if (total > 0)
+        {
+            incomePercent = (int)Math.Round(totalIncome / total * 100);
+            expensePercent = 100 - incomePercent;
+
+            // длина дуги для SVG (окружность r=50, длина ≈ 2*PI*50 = 314)
+            incomeDash = 314 * incomePercent / 100.0;
+        }
+        else
+        {
+            incomePercent = 0;
+            expensePercent = 0;
+            incomeDash = 0;
+        }
     }
 }

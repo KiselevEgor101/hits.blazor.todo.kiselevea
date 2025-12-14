@@ -10,7 +10,7 @@
     window.operationsChartInstance = new Chart(ctx, {
         type: 'pie',
         data: {
-            labels: ['Приход', 'Расход', 'Внутренние переводы'],
+            labels: ['Доход', 'Расход', 'Внутренние переводы'],
             datasets: [{
                 data: [income, expense, transfers],
                 backgroundColor: ['#28a745', '#dc3545', '#ffc107']

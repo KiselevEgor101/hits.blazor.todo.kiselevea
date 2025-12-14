@@ -31,7 +31,7 @@ else
         <div class="col-md-3">
             <div class="card text-white bg-success">
                 <div class="card-body">
-                    <h6 class="card-title">Приход</h6>
+                    <h6 class="card-title">Доход</h6>
                     <h4>@income.ToString("N2") руб.</h4>
                 </div>
             </div>
@@ -75,7 +75,7 @@ else
                         @balance.ToString("N2") руб.
                     </h2>
                     <small class="text-muted">
-                        Формула: Приход (@income.ToString("N2")) - Расход (@expense.ToString("N2"))
+                        Формула: Доход (@income.ToString("N2")) - Расход (@expense.ToString("N2"))
                         - Переводы OUT (@transfersOut.ToString("N2")) + Переводы IN (@transfersIn.ToString("N2"))
                     </small>
                 </div>
@@ -174,7 +174,7 @@ else
         </button>
         <button type="button" class="btn @(selectedFilter == "income" ? "btn-success" : "btn-outline-success")"
                 @onclick='() => FilterTransactions("income")'>
-            Приход
+            Доход
         </button>
         <button type="button" class="btn @(selectedFilter == "expense" ? "btn-danger" : "btn-outline-danger")"
                 @onclick='() => FilterTransactions("expense")'>
@@ -295,9 +295,9 @@ else
 
     private void CalculateFinancials()
     {
-        // Приход
+        // Доход
         income = transactions
-            .Where(t => t.OperationType == "Приход" && t.DepartmentId == DepartmentId)
+            .Where(t => t.OperationType == "Доход" && t.DepartmentId == DepartmentId)
             .Sum(t => t.Amount);
 
         // Расход
@@ -355,7 +355,7 @@ else
         selectedFilter = filter;
         filteredTransactions = filter switch
         {
-            "income" => transactions.Where(t => t.OperationType == "Приход" && t.DepartmentId == DepartmentId).ToList(),
+            "income" => transactions.Where(t => t.OperationType == "Доход" && t.DepartmentId == DepartmentId).ToList(),
             "expense" => transactions.Where(t => t.OperationType == "Расход" && t.DepartmentId == DepartmentId).ToList(),
             "transfer" => transactions.Where(t => t.OperationType == "Внутренний перевод").ToList(),
             _ => transactions.ToList()
@@ -366,7 +366,7 @@ else
     {
         return operationType switch
         {
-            "Приход" => "bg-success",
+            "Доход" => "bg-success",
             "Расход" => "bg-danger",
             "Внутренний перевод" => "bg-warning text-dark",
             _ => "bg-secondary"
